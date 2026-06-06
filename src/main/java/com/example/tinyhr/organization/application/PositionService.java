@@ -3,12 +3,10 @@ package com.example.tinyhr.organization.application;
 import com.example.tinyhr.organization.application.dto.CreatePositionRequest;
 import com.example.tinyhr.organization.application.dto.ReorderPositionsRequest;
 import com.example.tinyhr.organization.application.dto.UpdatePositionRequest;
+import com.example.tinyhr.organization.domain.OrganizationErrorCode;
 import com.example.tinyhr.organization.domain.position.Position;
-import com.example.tinyhr.organization.domain.position.PositionReorderDuplicateIdException;
-import com.example.tinyhr.organization.domain.position.PositionReorderIncompleteException;
 import com.example.tinyhr.organization.domain.position.PositionRepository;
-import com.example.tinyhr.shared.kernel.ConflictException;
-import com.example.tinyhr.shared.kernel.NotFoundException;
+import com.example.tinyhr.shared.kernel.BusinessException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,10 +35,10 @@ public class PositionService {
     public String create(CreatePositionRequest request) {
         String name = request.name().trim();
         if (positionRepository.existsByName(name)) {
-            throw new ConflictException("POSITION_NAME_DUPLICATED");
+            throw new BusinessException(OrganizationErrorCode.POSITION_NAME_DUPLICATED);
         }
         if (positionRepository.existsByDisplayOrder(request.displayOrder())) {
-            throw new ConflictException("POSITION_ORDER_DUPLICATED");
+            throw new BusinessException(OrganizationErrorCode.POSITION_ORDER_DUPLICATED);
         }
         Position position = Position.create(name, request.displayOrder(), request.careerCriteria());
         positionRepository.save(position);
@@ -50,11 +48,11 @@ public class PositionService {
     /** 직위 정보 수정(이름·승진 기준). null 필드는 변경하지 않는다. */
     public void update(String positionId, UpdatePositionRequest request) {
         Position position = positionRepository.findById(positionId)
-                .orElseThrow(() -> new NotFoundException("POSITION_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(OrganizationErrorCode.POSITION_NOT_FOUND));
 
         if (request.name() != null) {
             if (positionRepository.existsByNameAndIdNot(request.name().trim(), positionId)) {
-                throw new ConflictException("POSITION_NAME_DUPLICATED");
+                throw new BusinessException(OrganizationErrorCode.POSITION_NAME_DUPLICATED);
             }
             position.rename(request.name());
         }
@@ -69,18 +67,13 @@ public class PositionService {
         List<String> ordered = request.orderedPositionIds();
         Set<String> inputIds = new LinkedHashSet<>(ordered);
         if (inputIds.size() != ordered.size()) {
-            throw new PositionReorderDuplicateIdException();
+            throw new BusinessException(OrganizationErrorCode.POSITION_REORDER_DUPLICATE_ID);
         }
 
         List<Position> active = positionRepository.findByActiveTrue();
         Set<String> activeIds = active.stream().map(Position::getId).collect(Collectors.toSet());
-        for (String id : ordered) {
-            if (!activeIds.contains(id)) {
-                throw new PositionReorderIncompleteException("재정렬 대상이 활성 직위가 아닙니다: " + id);
-            }
-        }
-        if (inputIds.size() != activeIds.size()) {
-            throw new PositionReorderIncompleteException();
+        if (!activeIds.containsAll(ordered) || inputIds.size() != activeIds.size()) {
+            throw new BusinessException(OrganizationErrorCode.POSITION_REORDER_INCOMPLETE);
         }
 
         Map<String, Position> byId = active.stream()
@@ -94,7 +87,7 @@ public class PositionService {
     /** 직위 아카이브(소프트 삭제). */
     public void archive(String positionId) {
         Position position = positionRepository.findById(positionId)
-                .orElseThrow(() -> new NotFoundException("POSITION_NOT_FOUND"));
+                .orElseThrow(() -> new BusinessException(OrganizationErrorCode.POSITION_NOT_FOUND));
         position.archive();
         positionRepository.save(position);
     }

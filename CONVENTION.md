@@ -81,11 +81,15 @@ MyBatis 매퍼 XML: `src/main/resources/mapper/<context>/<Name>Mapper.xml`
 - 소프트 삭제는 `archivedAt`(nullable) + `isActive` 플래그로 표현(전역 필터 미적용 — 조회에서 명시 처리).
 - SQL 예약어 충돌 피함: 예) `order` → 필드 `displayOrder`(컬럼 `display_order`).
 
-## 예외/에러
+## 예외/에러 (ErrorCode enum + 단일 BusinessException)
 
-- `shared/kernel/DomainException`(추상, `code` 보유) + 상태별 하위: `NotFoundException`(404)·`ConflictException`(409)·`BadRequestException`(400)·`ForbiddenException`(403).
-- 컨텍스트별 구체 예외는 위 상태별 예외를 상속(예: `PositionInvalidException extends BadRequestException`).
-- `shared/config/GlobalExceptionHandler`(@RestControllerAdvice)가 상태별로 매핑해 `{ code, message }` 응답.
+에러마다 예외 클래스를 만들지 않는다(Java 보일러플레이트 폭발 방지).
+
+- `shared/kernel/ErrorCode`(인터페이스: `code()`·`status()`·`message()`) + `shared/kernel/BusinessException`(ErrorCode 보유) 하나.
+- **컨텍스트별 ErrorCode enum** 카탈로그를 둔다: `<context>/domain/<Context>ErrorCode`(코드·HTTP상태·메시지). 예: `OrganizationErrorCode.DEPARTMENT_DEPTH_EXCEEDED`.
+- 도메인/유즈케이스는 `throw new BusinessException(OrganizationErrorCode.XXX)` 로만 던진다.
+- `shared/config/GlobalExceptionHandler`(@RestControllerAdvice)가 `BusinessException` 하나를 받아 `code.status()` 로 매핑, `{ code, message }` 응답.
+- 테스트는 `isInstanceOf(BusinessException.class)` + `getErrorCode()` 가 기대 enum 인지 단언.
 
 ## 테스트 (유닛만)
 
