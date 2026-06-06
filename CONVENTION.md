@@ -75,8 +75,17 @@ MyBatis 매퍼 XML: `src/main/resources/mapper/<context>/<Name>Mapper.xml`
 - 엔티티 내부 상태는 **`private` 기본**. `@Getter`만, **`@Setter` 금지**.
 - 상태 변경은 **도메인 메서드로만**(`rename()`, `archive()` …). 외부에서 필드 직접 수정 불가.
 - 생성은 **정적 팩토리**(`create`/`provision`/`issue`)로. 불변식·정규화(trim 등)를 팩토리·메서드에서 강제. `@Builder`는 불변식 우회 위험이 있어 애그리거트엔 지양.
+- **생성자 규칙(정론)**: 외부 생성자는 차단한다. JPA 용 **`protected` 빈 생성자 하나만**(`@NoArgsConstructor(access = PROTECTED)`) 두고, 정적 팩토리는 `new X()`(빈 생성자)로 인스턴스를 만든 뒤 **필드를 직접 주입**한다. **파라미터 생성자를 만들지 않는다**(엔티티 간 일관성).
+  ```java
+  public static Position create(String name, int order, String criteria) {
+      Position p = new Position();   // 빈 생성자
+      p.id = UUID.randomUUID().toString();
+      p.name = name.trim();
+      ...
+      return p;
+  }
+  ```
 - 식별자(ID)는 도메인이 소유: 팩토리에서 `UUID.randomUUID().toString()` 생성(NestJS `crypto.randomUUID()` 대응). 타입은 `String`.
-- JPA 요구로 **`protected` 기본 생성자** 1개 둠(`@NoArgsConstructor(access = PROTECTED)`).
 - 불변 VO·조회 뷰·요청 DTO 는 Java 21 **`record`** 사용.
 - 소프트 삭제는 `archivedAt`(nullable) + `isActive` 플래그로 표현(전역 필터 미적용 — 조회에서 명시 처리).
 - SQL 예약어 충돌 피함: 예) `order` → 필드 `displayOrder`(컬럼 `display_order`).
@@ -95,8 +104,14 @@ MyBatis 매퍼 XML: `src/main/resources/mapper/<context>/<Name>Mapper.xml`
 
 - 위치: 대상과 같은 패키지 `src/test/java/...`.
 - **도메인 엔티티/VO 테스트**: 순수 JUnit5, Spring 미기동.
-- **유즈케이스(서비스) 테스트**: 리포지토리(JPA 인터페이스)는 **Mockito mock**, 협력 포트도 mock. `given/when/then` 주석, AssertJ 단언.
-- 비즈니스 용어 중심 테스트명(한글 가능). 통합/웹 테스트는 만들지 않음(스캐폴드의 `contextLoads` 스모크만 유지).
+- **유즈케이스(서비스) 테스트**: 리포지토리(JPA 인터페이스)·협력 포트는 mock. AssertJ 단언.
+- **메서드명은 영문**(식별자), **설명은 `@DisplayName`** 으로 분리한다. 메서드명에 한글 금지.
+- **`@DisplayName` 은 비즈니스 관점**으로 쓴다. 에러 코드·기술 용어(enum 이름 등) 노출 금지.
+  - (X) `"POSITION_NAME_DUPLICATED 이면 예외"`  (O) `"이미 같은 이름의 직위가 있으면 등록할 수 없다"`
+- **given/when/then**: 모킹은 **BDDMockito** 로 통일한다 — `given(...).willReturn(...)`(setup), 검증은 `then(...).should()`. 이렇게 해야 `// given` 구역과 코드(`given`)가 일치하고, `when` 키워드 혼동이 없다.
+  - `// given` = 상태/스텁 셋업, `// when` = 대상 동작 호출, `// then` = 결과 단언. 예외 케이스는 호출+단언이 융합되므로 `// when & then` 허용.
+- 비즈니스 예외 검증은 `isInstanceOf(BusinessException.class)` + `getErrorCode()` 가 기대 enum 인지 단언(공용 헬퍼 `assertBusiness`).
+- 통합/웹 테스트는 만들지 않음(스캐폴드의 `contextLoads` 스모크만 유지).
 
 ## 커밋
 

@@ -19,9 +19,12 @@ class DepartmentTest {
     }
 
     @Test
-    @DisplayName("최상위 부서는 depth 0, parentId null 로 생성된다")
-    void 최상위_생성() {
+    @DisplayName("최상위 부서는 상위 없이 만들어진다")
+    void createRoot() {
+        // when
         Department root = Department.create(null, "  본부  ");
+
+        // then
         assertThat(root.getId()).isNotBlank();
         assertThat(root.getName()).isEqualTo("본부");
         assertThat(root.getParentId()).isNull();
@@ -30,55 +33,79 @@ class DepartmentTest {
     }
 
     @Test
-    @DisplayName("하위 팀은 depth 1, parentId 가 상위로 설정된다")
-    void 하위_생성() {
+    @DisplayName("하위 팀은 상위 부서 아래에 만들어진다")
+    void createChild() {
+        // given
         Department root = Department.create(null, "본부");
+
+        // when
         Department team = Department.create(root, "1팀");
+
+        // then
         assertThat(team.getDepth()).isEqualTo(1);
         assertThat(team.getParentId()).isEqualTo(root.getId());
     }
 
     @Test
-    @DisplayName("3뎁스(팀 아래)는 DEPARTMENT_DEPTH_EXCEEDED")
-    void 깊이초과() {
+    @DisplayName("부서 트리는 부서·팀 2단계까지만 만들 수 있다")
+    void rejectThirdLevel() {
+        // given
         Department root = Department.create(null, "본부");
         Department team = Department.create(root, "1팀");
+
+        // when & then
         assertBusiness(() -> Department.create(team, "파트"),
                 OrganizationErrorCode.DEPARTMENT_DEPTH_EXCEEDED);
     }
 
     @Test
-    @DisplayName("비활성 상위 아래 생성은 DEPARTMENT_PARENT_INACTIVE")
-    void 비활성_상위() {
+    @DisplayName("아카이브된 상위 부서 아래에는 만들 수 없다")
+    void rejectInactiveParent() {
+        // given
         Department root = Department.create(null, "본부");
         root.archive();
+
+        // when & then
         assertBusiness(() -> Department.create(root, "1팀"),
                 OrganizationErrorCode.DEPARTMENT_PARENT_INACTIVE);
     }
 
     @Test
-    @DisplayName("이름 변경은 trim 된다")
-    void 이름변경() {
+    @DisplayName("부서 이름을 바꿀 수 있다")
+    void rename() {
+        // given
         Department root = Department.create(null, "본부");
+
+        // when
         root.rename("  전략본부  ");
+
+        // then
         assertThat(root.getName()).isEqualTo("전략본부");
     }
 
     @Test
-    @DisplayName("아카이브된 부서 수정은 DEPARTMENT_ARCHIVED")
-    void 아카이브_후_수정금지() {
+    @DisplayName("아카이브된 부서는 수정할 수 없다")
+    void rejectModifyAfterArchive() {
+        // given
         Department root = Department.create(null, "본부");
         root.archive();
+
+        // when & then
         assertBusiness(() -> root.rename("x"), OrganizationErrorCode.DEPARTMENT_ARCHIVED);
         assertBusiness(() -> root.updateResponsibilities("y"),
                 OrganizationErrorCode.DEPARTMENT_ARCHIVED);
     }
 
     @Test
-    @DisplayName("아카이브하면 비활성 + archivedAt 기록")
-    void 아카이브() {
+    @DisplayName("부서를 아카이브하면 비활성이 된다")
+    void archive() {
+        // given
         Department root = Department.create(null, "본부");
+
+        // when
         root.archive();
+
+        // then
         assertThat(root.isActive()).isFalse();
         assertThat(root.getArchivedAt()).isNotNull();
     }

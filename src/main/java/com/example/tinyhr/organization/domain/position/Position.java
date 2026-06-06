@@ -42,18 +42,16 @@ public class Position {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
-    private Position(String id, String name, int displayOrder, String careerCriteria) {
-        this.id = id;
-        this.name = name.trim();
-        this.displayOrder = displayOrder;
-        this.careerCriteria = sanitize(careerCriteria);
-        this.active = true;
-        this.archivedAt = null;
-    }
-
     /** 새 직위 생성. 식별자는 도메인이 발급한다. */
     public static Position create(String name, int displayOrder, String careerCriteria) {
-        return new Position(UUID.randomUUID().toString(), name, displayOrder, careerCriteria);
+        Position position = new Position();
+        position.id = UUID.randomUUID().toString();
+        position.name = name.trim();
+        position.displayOrder = displayOrder;
+        position.careerCriteria = sanitize(careerCriteria);
+        position.active = true;
+        position.archivedAt = null;
+        return position;
     }
 
     public void rename(String newName) {
