@@ -1,4 +1,4 @@
-package com.example.tinyhr.organization.domain.position;
+package com.example.tinyhr.organization.domain.rank;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,19 +11,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 직위(전사 단일 트랙) 애그리거트 루트.
+ * 직급(전사 단일 트랙) 애그리거트 루트.
  *
  * 내부 상태는 private, 변경은 도메인 메서드로만 한다(setter 없음).
  * 소프트 삭제는 {@code archivedAt} + {@code active} 로 표현한다.
  */
 @Entity
-@Table(name = "position")
+@Table(name = "ranks") // rank 는 SQL 예약어(RANK())라 복수형 테이블명으로 회피
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Position {
+public class Rank {
 
     @Id
-    @Column(name = "position_id", length = 36)
+    @Column(name = "rank_id", length = 36)
     private String id;
 
     @Column(nullable = false)
@@ -42,16 +42,16 @@ public class Position {
     @Column(name = "archived_at")
     private Instant archivedAt;
 
-    /** 새 직위 생성. 식별자는 도메인이 발급한다. */
-    public static Position create(String name, int displayOrder, String careerCriteria) {
-        Position position = new Position();
-        position.id = UUID.randomUUID().toString();
-        position.name = name.trim();
-        position.displayOrder = displayOrder;
-        position.careerCriteria = sanitize(careerCriteria);
-        position.active = true;
-        position.archivedAt = null;
-        return position;
+    /** 새 직급 생성. 식별자는 도메인이 발급한다. */
+    public static Rank create(String name, int displayOrder, String careerCriteria) {
+        Rank rank = new Rank();
+        rank.id = UUID.randomUUID().toString();
+        rank.name = name.trim();
+        rank.displayOrder = displayOrder;
+        rank.careerCriteria = sanitize(careerCriteria);
+        rank.active = true;
+        rank.archivedAt = null;
+        return rank;
     }
 
     public void rename(String newName) {

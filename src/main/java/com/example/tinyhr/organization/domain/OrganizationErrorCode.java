@@ -6,12 +6,12 @@ import org.springframework.http.HttpStatus;
 /** organization 컨텍스트 에러 카탈로그. */
 public enum OrganizationErrorCode implements ErrorCode {
 
-    // position
-    POSITION_NOT_FOUND(HttpStatus.NOT_FOUND, "직위를 찾을 수 없습니다"),
-    POSITION_NAME_DUPLICATED(HttpStatus.CONFLICT, "이미 같은 이름의 직위가 있습니다"),
-    POSITION_ORDER_DUPLICATED(HttpStatus.CONFLICT, "이미 같은 정렬 순서의 직위가 있습니다"),
-    POSITION_REORDER_DUPLICATE_ID(HttpStatus.BAD_REQUEST, "재정렬 입력에 같은 직위 ID 가 중복되었습니다"),
-    POSITION_REORDER_INCOMPLETE(HttpStatus.BAD_REQUEST, "활성 직위 전체가 재정렬 입력에 포함되어야 합니다"),
+    // rank
+    RANK_NOT_FOUND(HttpStatus.NOT_FOUND, "직급을 찾을 수 없습니다"),
+    RANK_NAME_DUPLICATED(HttpStatus.CONFLICT, "이미 같은 이름의 직급이 있습니다"),
+    RANK_ORDER_DUPLICATED(HttpStatus.CONFLICT, "이미 같은 정렬 순서의 직급이 있습니다"),
+    RANK_REORDER_DUPLICATE_ID(HttpStatus.BAD_REQUEST, "재정렬 입력에 같은 직급 ID 가 중복되었습니다"),
+    RANK_REORDER_INCOMPLETE(HttpStatus.BAD_REQUEST, "활성 직급 전체가 재정렬 입력에 포함되어야 합니다"),
 
     // department
     DEPARTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "부서를 찾을 수 없습니다"),

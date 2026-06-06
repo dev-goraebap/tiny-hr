@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.example.tinyhr.organization.adapter.mapper.PositionQueryMapper">
+<mapper namespace="com.example.tinyhr.organization.adapter.mapper.RankQueryMapper">
 
     <!--
-      관리자 직위 목록: 활성 우선, 활성은 displayOrder 오름차순.
+      관리자 직급 목록: 활성 우선, 활성은 displayOrder 오름차순.
       memberCount 는 employee 애그리거트 이식 후 집계 조인으로 대체(현재 0).
     -->
     <select id="listForAdmin"
-            resultType="com.example.tinyhr.organization.adapter.mapper.viewmodel.PositionListItem">
+            resultType="com.example.tinyhr.organization.adapter.mapper.viewmodel.RankListItem">
         SELECT
-            position_id     AS positionId,
+            rank_id         AS rankId,
             name            AS name,
             display_order   AS displayOrder,
             career_criteria AS careerCriteria,
             is_active       AS active,
             0               AS memberCount
-        FROM position
+        FROM ranks
         ORDER BY is_active DESC, display_order ASC, name ASC
     </select>
 

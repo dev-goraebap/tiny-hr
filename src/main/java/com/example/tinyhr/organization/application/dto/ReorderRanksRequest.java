@@ -4,5 +4,5 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
-public record ReorderPositionsRequest(
-        @NotEmpty List<@NotBlank String> orderedPositionIds) {}
+public record ReorderRanksRequest(
+        @NotEmpty List<@NotBlank String> orderedRankIds) {}
