@@ -23,7 +23,26 @@ public enum IamErrorCode implements ErrorCode {
     ROLE_ASSIGNMENT_USER_NOT_FOUND(HttpStatus.NOT_FOUND, "역할을 부여할 사원(계정)을 찾을 수 없습니다"),
     ROLE_ASSIGNMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "역할 부여 내역을 찾을 수 없습니다"),
     ROLE_ASSIGNMENT_DUPLICATED(HttpStatus.CONFLICT, "이미 해당 역할이 부여되어 있습니다"),
-    ROLE_ASSIGNMENT_ALREADY_REVOKED(HttpStatus.CONFLICT, "이미 회수된 부여입니다");
+    ROLE_ASSIGNMENT_ALREADY_REVOKED(HttpStatus.CONFLICT, "이미 회수된 부여입니다"),
+
+    // auth - otp
+    OTP_INVALID(HttpStatus.BAD_REQUEST, "인증번호가 올바르지 않습니다"),
+    OTP_EXPIRED(HttpStatus.BAD_REQUEST, "인증번호가 만료되었습니다"),
+    OTP_ALREADY_USED(HttpStatus.BAD_REQUEST, "이미 사용된 인증번호입니다"),
+    OTP_REVOKED(HttpStatus.BAD_REQUEST, "더 이상 유효하지 않은 인증번호입니다 — 재발급이 필요합니다"),
+    OTP_ATTEMPTS_EXCEEDED(HttpStatus.BAD_REQUEST, "인증번호 시도 횟수를 초과했습니다 — 재발급이 필요합니다"),
+    OTP_RESEND_COOLDOWN(HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 인증번호를 요청해주세요"),
+
+    // auth - refresh token
+    REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 리프레시 토큰입니다"),
+    REFRESH_TOKEN_REUSED(HttpStatus.UNAUTHORIZED, "이미 사용된 리프레시 토큰입니다"),
+
+    // auth - account/employee 게이트
+    AUTH_USER_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "등록된 계정을 찾을 수 없습니다"),
+    AUTH_USER_ACCOUNT_NOT_ACTIVE(HttpStatus.FORBIDDEN, "비활성화된 계정입니다"),
+    AUTH_EMPLOYEE_NOT_YET_ACTIVE(HttpStatus.FORBIDDEN, "아직 활성화되지 않은 사원입니다"),
+    AUTH_EMPLOYEE_TERMINATED(HttpStatus.FORBIDDEN, "퇴사 처리된 사원입니다"),
+    AUTH_EMPLOYEE_NOT_ACTIVE(HttpStatus.FORBIDDEN, "재직 중인 사원이 아닙니다");
 
     private final HttpStatus status;
     private final String message;

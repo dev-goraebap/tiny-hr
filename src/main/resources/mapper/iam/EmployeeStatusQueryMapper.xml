@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.tinyhr.iam.adapter.mapper.EmployeeStatusQueryMapper">
+
+    <!--
+      로그인 게이트용 사원 상태 조회. 사원 본체는 organization BC 소유 — iam 은 로그인 허용 판정에
+      필요한 상태값만 읽기 측 프로젝션으로 가져온다(쓰기 경로는 BC 경계를 넘지 않는다).
+      userAccountId == employeeId.
+    -->
+    <select id="findStatus" resultType="java.lang.String">
+        SELECT status
+        FROM employee
+        WHERE employee_id = #{employeeId}
+    </select>
+
+</mapper>
