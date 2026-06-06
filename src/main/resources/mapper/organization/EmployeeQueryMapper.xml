@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.tinyhr.organization.adapter.mapper.EmployeeQueryMapper">
+
+    <!-- 공통 필터(employee 컬럼만 참조 — 목록·카운트 공용). -->
+    <sql id="filters">
+        <where>
+            <if test="status != null">
+                AND e.status = #{status}
+            </if>
+            <choose>
+                <when test="departmentId == 'NONE'">
+                    AND e.department_id IS NULL
+                </when>
+                <when test="departmentId != null">
+                    AND e.department_id = #{departmentId}
+                </when>
+            </choose>
+            <if test="rankId != null">
+                AND e.rank_id = #{rankId}
+            </if>
+            <if test="q != null and q != ''">
+                AND (LOWER(e.name) LIKE LOWER(CONCAT('%', #{q}, '%'))
+                     OR LOWER(e.work_email) LIKE LOWER(CONCAT('%', #{q}, '%')))
+            </if>
+        </where>
+    </sql>
+
+    <!-- 기본 정렬: 직급 순(작을수록 위, 미지정은 뒤) → 이름. sortBy 로 이름/입사일 정렬 선택. -->
+    <select id="listForAdmin"
+            resultType="com.example.tinyhr.organization.adapter.mapper.viewmodel.EmployeeListItem">
+        SELECT
+            e.employee_id   AS employeeId,
+            e.name          AS name,
+            e.work_email    AS workEmail,
+            e.department_id AS departmentId,
+            d.name          AS departmentName,
+            e.rank_id       AS rankId,
+            r.name          AS rankName,
+            r.display_order AS rankOrder,
+            e.hire_date     AS hireDate,
+            e.status        AS status
+        FROM employee e
+        LEFT JOIN department d ON d.department_id = e.department_id
+        LEFT JOIN ranks r ON r.rank_id = e.rank_id
+        <include refid="filters"/>
+        <choose>
+            <when test="sortBy == 'name'">
+                ORDER BY e.name <if test="sortDir == 'desc'">DESC</if><if test="sortDir != 'desc'">ASC</if>, e.employee_id ASC
+            </when>
+            <when test="sortBy == 'hireDate'">
+                ORDER BY e.hire_date <if test="sortDir == 'desc'">DESC</if><if test="sortDir != 'desc'">ASC</if>, e.employee_id ASC
+            </when>
+            <otherwise>
+                ORDER BY r.display_order ASC NULLS LAST, e.name ASC, e.employee_id ASC
+            </otherwise>
+        </choose>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="countForAdmin" resultType="long">
+        SELECT count(*)
+        FROM employee e
+        <include refid="filters"/>
+    </select>
+
+    <select id="findDetail"
+            resultType="com.example.tinyhr.organization.adapter.mapper.viewmodel.EmployeeDetailView">
+        SELECT
+            e.employee_id   AS employeeId,
+            e.name          AS name,
+            e.work_email    AS workEmail,
+            e.department_id AS departmentId,
+            d.name          AS departmentName,
+            e.rank_id       AS rankId,
+            r.name          AS rankName,
+            e.hire_date     AS hireDate,
+            e.birth_date    AS birthDate,
+            e.status        AS status,
+            e.invited_at    AS invitedAt,
+            e.activated_at  AS activatedAt,
+            e.terminated_at AS terminatedAt
+        FROM employee e
+        LEFT JOIN department d ON d.department_id = e.department_id
+        LEFT JOIN ranks r ON r.rank_id = e.rank_id
+        WHERE e.employee_id = #{employeeId}
+    </select>
+
+</mapper>
