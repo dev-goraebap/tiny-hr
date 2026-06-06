@@ -1,4 +1,4 @@
-package com.example.tiny_hr;
+package com.example.tinyhr;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
