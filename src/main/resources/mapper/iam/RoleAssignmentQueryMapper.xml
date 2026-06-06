@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.tinyhr.iam.adapter.mapper.RoleAssignmentQueryMapper">
+
+    <!-- 특정 사원의 부여 목록(회수 포함). active 는 revoked_at 으로 파생. -->
+    <select id="listByUser"
+            resultType="com.example.tinyhr.iam.adapter.mapper.viewmodel.RoleAssignmentListItem">
+        SELECT
+            assignment_id            AS assignmentId,
+            user_account_id          AS userAccountId,
+            role_id                  AS roleId,
+            (revoked_at IS NULL)     AS active,
+            assigned_at              AS assignedAt,
+            revoked_at               AS revokedAt
+        FROM role_assignment
+        WHERE user_account_id = #{userAccountId}
+        ORDER BY assigned_at DESC
+    </select>
+
+    <!--
+      특정 역할을 보유한 활성 사원. 표시용으로 organization 의 employee 테이블을 조인한다
+      (읽기 측 프로젝션 — 쓰기 경로는 BC 경계를 넘지 않는다).
+    -->
+    <select id="listMembersByRole"
+            resultType="com.example.tinyhr.iam.adapter.mapper.viewmodel.RoleAssignmentMember">
+        SELECT
+            ra.assignment_id   AS assignmentId,
+            ra.user_account_id AS userAccountId,
+            e.name             AS employeeName,
+            e.work_email       AS employeeWorkEmail,
+            ra.assigned_at     AS assignedAt
+        FROM role_assignment ra
+        INNER JOIN employee e ON e.employee_id = ra.user_account_id
+        WHERE ra.role_id = #{roleId}
+          AND ra.revoked_at IS NULL
+        ORDER BY e.name ASC
+    </select>
+
+</mapper>

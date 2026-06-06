@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.tinyhr.iam.adapter.mapper.RoleQueryMapper">
+
+    <!--
+      역할 목록: 활성 우선·이름순. permissions 는 role_permission 자식 테이블을 LEFT JOIN 해
+      <collection> 으로 묶는다(권한이 없으면 notNullColumn 으로 null 항목을 건너뛴다).
+      assignedCount 는 회수되지 않은 부여 수.
+    -->
+    <resultMap id="roleListItem" type="com.example.tinyhr.iam.adapter.mapper.viewmodel.RoleListItem">
+        <id property="roleId" column="role_id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="system" column="is_system"/>
+        <result property="active" column="is_active"/>
+        <result property="assignedCount" column="assigned_count"/>
+        <collection property="permissions" ofType="java.lang.String" notNullColumn="permission">
+            <result column="permission"/>
+        </collection>
+    </resultMap>
+
+    <select id="listForAdmin" resultMap="roleListItem">
+        SELECT
+            r.role_id        AS role_id,
+            r.name           AS name,
+            r.description    AS description,
+            r.is_system      AS is_system,
+            r.is_active      AS is_active,
+            rp.permission    AS permission,
+            COALESCE(ac.cnt, 0) AS assigned_count
+        FROM roles r
+        LEFT JOIN role_permission rp ON rp.role_id = r.role_id
+        LEFT JOIN (
+            SELECT role_id, COUNT(*) AS cnt
+            FROM role_assignment
+            WHERE revoked_at IS NULL
+            GROUP BY role_id
+        ) ac ON ac.role_id = r.role_id
+        ORDER BY r.is_active DESC, r.name ASC
+    </select>
+
+</mapper>
