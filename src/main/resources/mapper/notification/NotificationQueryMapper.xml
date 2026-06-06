@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.tinyhr.notification.adapter.mapper.NotificationQueryMapper">
+
+    <!--
+      본인 알림 목록: 메시지 × 본인 전달 조인, 최신순. unreadOnly 면 미읽음만,
+      cursor(이전 페이지 마지막 createdAt) 가 있으면 그보다 이전 것만. LIMIT 로 페이지 크기 제한.
+    -->
+    <select id="listForRecipient"
+            resultType="com.example.tinyhr.notification.adapter.mapper.viewmodel.NotificationListItem">
+        SELECT
+            m.event_id           AS eventId,
+            m.kind               AS kind,
+            m.title              AS title,
+            m.message            AS message,
+            m.link               AS link,
+            (d.read_at IS NULL)  AS unread,
+            m.issued_at          AS createdAt,
+            d.read_at            AS readAt
+        FROM notification_delivery d
+        INNER JOIN notification_message m ON m.event_id = d.event_id
+        WHERE d.recipient_id = #{recipientId}
+        <if test="unreadOnly"> AND d.read_at IS NULL </if>
+        <if test="cursor != null"> AND m.issued_at &lt; #{cursor} </if>
+        ORDER BY m.issued_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="unreadCount" resultType="long">
+        SELECT COUNT(*)
+        FROM notification_delivery
+        WHERE recipient_id = #{recipientId}
+          AND read_at IS NULL
+    </select>
+
+</mapper>
