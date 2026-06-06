@@ -1,14 +1,14 @@
 package com.example.tinyhr.organization.adapter.web;
 
-import com.example.tinyhr.organization.adapter.mapper.DepartmentListItem;
 import com.example.tinyhr.organization.adapter.mapper.DepartmentQueryMapper;
+import com.example.tinyhr.organization.adapter.mapper.viewmodel.DepartmentListItem;
 import com.example.tinyhr.organization.application.DepartmentService;
 import com.example.tinyhr.organization.application.dto.CreateDepartmentRequest;
 import com.example.tinyhr.organization.application.dto.ReorderDepartmentsRequest;
 import com.example.tinyhr.organization.application.dto.UpdateDepartmentRequest;
+import com.example.tinyhr.shared.kernel.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,14 +35,14 @@ public class DepartmentController {
     }
 
     @GetMapping
-    public Map<String, List<DepartmentListItem>> list() {
-        return Map.of("items", departmentQueryMapper.listAll());
+    public ApiResponse<List<DepartmentListItem>> list() {
+        return ApiResponse.of(departmentQueryMapper.listAll());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, String> create(@Valid @RequestBody CreateDepartmentRequest request) {
-        return Map.of("departmentId", departmentService.create(request));
+    public void create(@Valid @RequestBody CreateDepartmentRequest request) {
+        departmentService.create(request);
     }
 
     @PostMapping("/reorder")

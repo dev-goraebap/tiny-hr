@@ -8,7 +8,7 @@
       memberCount 는 employee 애그리거트 이식 후 집계 조인으로 대체(현재 0).
     -->
     <select id="listForAdmin"
-            resultType="com.example.tinyhr.organization.adapter.mapper.PositionListItem">
+            resultType="com.example.tinyhr.organization.adapter.mapper.viewmodel.PositionListItem">
         SELECT
             position_id     AS positionId,
             name            AS name,

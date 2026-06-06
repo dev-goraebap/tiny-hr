@@ -1,5 +1,6 @@
 package com.example.tinyhr.organization.adapter.mapper;
 
+import com.example.tinyhr.organization.adapter.mapper.viewmodel.DepartmentListItem;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 

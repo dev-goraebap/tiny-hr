@@ -1,14 +1,14 @@
 package com.example.tinyhr.organization.adapter.web;
 
-import com.example.tinyhr.organization.adapter.mapper.PositionListItem;
 import com.example.tinyhr.organization.adapter.mapper.PositionQueryMapper;
+import com.example.tinyhr.organization.adapter.mapper.viewmodel.PositionListItem;
 import com.example.tinyhr.organization.application.PositionService;
 import com.example.tinyhr.organization.application.dto.CreatePositionRequest;
 import com.example.tinyhr.organization.application.dto.ReorderPositionsRequest;
 import com.example.tinyhr.organization.application.dto.UpdatePositionRequest;
+import com.example.tinyhr.shared.kernel.ApiResponse;
 import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,14 +34,14 @@ public class PositionController {
     }
 
     @GetMapping
-    public Map<String, List<PositionListItem>> list() {
-        return Map.of("items", positionQueryMapper.listForAdmin());
+    public ApiResponse<List<PositionListItem>> list() {
+        return ApiResponse.of(positionQueryMapper.listForAdmin());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, String> create(@Valid @RequestBody CreatePositionRequest request) {
-        return Map.of("positionId", positionService.create(request));
+    public void create(@Valid @RequestBody CreatePositionRequest request) {
+        positionService.create(request);
     }
 
     @PostMapping("/reorder")

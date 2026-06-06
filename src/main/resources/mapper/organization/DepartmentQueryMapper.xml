@@ -4,7 +4,7 @@
 <mapper namespace="com.example.tinyhr.organization.adapter.mapper.DepartmentQueryMapper">
 
     <select id="listAll"
-            resultType="com.example.tinyhr.organization.adapter.mapper.DepartmentListItem">
+            resultType="com.example.tinyhr.organization.adapter.mapper.viewmodel.DepartmentListItem">
         SELECT
             department_id    AS departmentId,
             name             AS name,

@@ -1,4 +1,4 @@
-package com.example.tinyhr.organization.adapter.mapper;
+package com.example.tinyhr.organization.adapter.mapper.viewmodel;
 
 /**
  * 관리자 직위 목록 조회 뷰(읽기 전용).
