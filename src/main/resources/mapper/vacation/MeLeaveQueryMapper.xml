@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.tinyhr.vacation.adapter.mapper.MeLeaveQueryMapper">
+
+    <!--
+      내 휴가 신청 목록 + 결재 상태. 상태는 approval 의 approval_request 를 조인해 가져온다
+      (읽기 측 프로젝션 — 쓰기 경로는 BC 경계를 넘지 않는다). amount_units 는 4쿼터=1일.
+    -->
+    <select id="listMyLeaves"
+            resultType="com.example.tinyhr.vacation.adapter.mapper.viewmodel.MyLeaveItem">
+        SELECT
+            lr.request_id          AS requestId,
+            lr.leave_type          AS leaveType,
+            lr.start_date          AS startDate,
+            lr.end_date            AS endDate,
+            (lr.amount_units / 4.0) AS amountDays,
+            ar.status              AS status,
+            lr.created_at          AS createdAt
+        FROM leave_request lr
+        LEFT JOIN approval_request ar ON ar.request_id = lr.request_id
+        WHERE lr.requester_id = #{requesterId}
+        ORDER BY lr.created_at DESC
+    </select>
+
+    <select id="findBalanceUnits" resultType="java.lang.Long">
+        SELECT balance_units
+        FROM annual_leave_balance
+        WHERE employee_id = #{employeeId}
+    </select>
+
+</mapper>
