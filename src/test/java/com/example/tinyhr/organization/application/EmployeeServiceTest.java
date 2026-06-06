@@ -9,6 +9,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 
+import com.example.tinyhr.iam.application.AuthOpenHostService;
 import com.example.tinyhr.organization.application.dto.CreateEmployeeRequest;
 import com.example.tinyhr.organization.application.dto.UpdateEmployeeBasicRequest;
 import com.example.tinyhr.organization.domain.OrganizationErrorCode;
@@ -44,6 +45,9 @@ class EmployeeServiceTest {
     @Mock
     RankRepository rankRepository;
 
+    @Mock
+    AuthOpenHostService authOpenHostService;
+
     @InjectMocks
     EmployeeService employeeService;
 
@@ -77,6 +81,20 @@ class EmployeeServiceTest {
         // then
         assertThat(id).isNotBlank();
         then(employeeRepository).should().save(any(Employee.class));
+        then(authOpenHostService).should().provisionAccount(eq(id), eq("user@example.com"));
+    }
+
+    @Test
+    @DisplayName("이미 인증 계정이 있는 이메일이면 초대할 수 없다")
+    void rejectDuplicateAccountEmail() {
+        given(employeeRepository.existsByWorkEmailAndStatusIn(eq("user@example.com"), any()))
+                .willReturn(false);
+        given(authOpenHostService.isEmailRegistered("user@example.com")).willReturn(true);
+
+        assertBusiness(() -> employeeService.invite(createRequest(null, null)),
+                OrganizationErrorCode.EMPLOYEE_EMAIL_DUPLICATED);
+        then(employeeRepository).should(never()).save(any());
+        then(authOpenHostService).should(never()).provisionAccount(any(), any());
     }
 
     @Test

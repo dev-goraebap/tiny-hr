@@ -1,5 +1,6 @@
 package com.example.tinyhr.organization.application;
 
+import com.example.tinyhr.iam.application.AuthOpenHostService;
 import com.example.tinyhr.organization.application.dto.CreateEmployeeRequest;
 import com.example.tinyhr.organization.application.dto.UpdateEmployeeBasicRequest;
 import com.example.tinyhr.organization.application.dto.UpdateEmployeeRequest;
@@ -17,7 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 사원 라이프사이클(초대·활성화·퇴직)과 조직 배치·기본 정보를 관리한다.
  *
- * <p>참고 프로젝트 단순화(MVP): 계정 연동·프로필·부서장 무결성·직위는 다루지 않는다.
+ * <p>초대 시 iam 의 {@link AuthOpenHostService} 로 인증 계정을 발급하고(userAccountId=employeeId),
+ * 업무 이메일 변경 시 계정 이메일을 동기화한다. 퇴직 사원의 로그인 차단은 iam 의 인증 게이트(사원
+ * 상태 확인)가 담당하므로 여기서 계정을 비활성화하지는 않는다.
+ *
+ * <p>참고 프로젝트 단순화(MVP): 프로필·부서장 무결성·직위는 다루지 않는다.
  *
  * @actor 관리자
  */
@@ -31,20 +36,27 @@ public class EmployeeService {
     private final EmployeeRepository employeeRepository;
     private final DepartmentRepository departmentRepository;
     private final RankRepository rankRepository;
+    private final AuthOpenHostService authOpenHostService;
 
     public EmployeeService(
             EmployeeRepository employeeRepository,
             DepartmentRepository departmentRepository,
-            RankRepository rankRepository) {
+            RankRepository rankRepository,
+            AuthOpenHostService authOpenHostService) {
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
         this.rankRepository = rankRepository;
+        this.authOpenHostService = authOpenHostService;
     }
 
-    /** 새 사원 초대. 업무 이메일 중복과 부서·직급 유효성을 검증한 뒤 INVITED 로 생성한다. */
+    /**
+     * 새 사원 초대. 업무 이메일 중복(사원·인증 계정)과 부서·직급 유효성을 검증한 뒤 INVITED 로 생성하고,
+     * 같은 식별자로 인증 계정을 발급한다(같은 트랜잭션).
+     */
     public String invite(CreateEmployeeRequest request) {
         String workEmail = Employee.normalizeWorkEmail(request.workEmail());
-        if (employeeRepository.existsByWorkEmailAndStatusIn(workEmail, ACTIVE_OR_INVITED)) {
+        if (employeeRepository.existsByWorkEmailAndStatusIn(workEmail, ACTIVE_OR_INVITED)
+                || authOpenHostService.isEmailRegistered(workEmail)) {
             throw new BusinessException(OrganizationErrorCode.EMPLOYEE_EMAIL_DUPLICATED);
         }
         validateDepartment(request.departmentId());
@@ -57,6 +69,9 @@ public class EmployeeService {
                 request.rankId(),
                 request.hireDate());
         employeeRepository.save(employee);
+
+        // iam 인증 계정 발급 — userAccountId == employeeId.
+        authOpenHostService.provisionAccount(employee.getId(), employee.getWorkEmail());
         return employee.getId();
     }
 
@@ -86,6 +101,7 @@ public class EmployeeService {
         employee.updateOrganizationAssignment(request.departmentId(), request.rankId());
         employee.updateProfileByAdmin(request.name(), request.workEmail());
         employeeRepository.save(employee);
+        syncAccountEmail(employee, request.workEmail());
     }
 
     /** 기본 정보 일괄 수정(이름·이메일·직급·입사일·생년월일) + status 전이. */
@@ -99,6 +115,7 @@ public class EmployeeService {
         employee.updateBasicByAdmin(request.hireDate(), request.birthDate());
         applyStatusTransition(employee, request.status());
         employeeRepository.save(employee);
+        syncAccountEmail(employee, request.workEmail());
     }
 
     /** 부서 소속 해제. 재직 중인 사원만 가능. */
@@ -109,6 +126,13 @@ public class EmployeeService {
         }
         employee.clearDepartment();
         employeeRepository.save(employee);
+    }
+
+    /** 업무 이메일이 변경 요청됐으면 인증 계정 이메일을 동기화한다(중복 충돌은 iam 이 방어). */
+    private void syncAccountEmail(Employee employee, String requestedWorkEmail) {
+        if (requestedWorkEmail != null) {
+            authOpenHostService.changeAccountEmail(employee.getId(), employee.getWorkEmail());
+        }
     }
 
     private void applyStatusTransition(Employee employee, EmployeeStatus target) {
