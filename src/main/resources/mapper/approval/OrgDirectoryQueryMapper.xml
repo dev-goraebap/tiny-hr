@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.tinyhr.approval.adapter.mapper.OrgDirectoryQueryMapper">
+
+    <!-- organization 의 사원·부서 존재 여부(읽기 측 프로젝션). 쓰기 경로는 BC 경계를 넘지 않는다. -->
+    <select id="countEmployee" resultType="long">
+        SELECT COUNT(*) FROM employee WHERE employee_id = #{employeeId}
+    </select>
+
+    <select id="countDepartment" resultType="long">
+        SELECT COUNT(*) FROM department WHERE department_id = #{departmentId}
+    </select>
+
+</mapper>

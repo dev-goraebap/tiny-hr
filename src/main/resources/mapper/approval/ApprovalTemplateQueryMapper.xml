@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.tinyhr.approval.adapter.mapper.ApprovalTemplateQueryMapper">
+
+    <resultMap id="templateView"
+            type="com.example.tinyhr.approval.adapter.mapper.viewmodel.ApprovalTemplateView">
+        <id property="approvalTemplateId" column="approval_template_id"/>
+        <result property="departmentId" column="department_id"/>
+        <result property="category" column="category"/>
+        <collection property="approvers"
+                ofType="com.example.tinyhr.approval.adapter.mapper.viewmodel.ApprovalTemplateApproverView"
+                notNullColumn="emp_id">
+            <result property="employeeId" column="emp_id"/>
+            <result property="orderNo" column="order_no"/>
+        </collection>
+    </resultMap>
+
+    <sql id="selectTemplates">
+        SELECT
+            t.approval_template_id AS approval_template_id,
+            t.department_id        AS department_id,
+            t.category             AS category,
+            a.employee_id          AS emp_id,
+            a.order_no             AS order_no
+        FROM approval_template t
+        LEFT JOIN approval_template_approver a
+               ON a.approval_template_id = t.approval_template_id
+    </sql>
+
+    <select id="listAll" resultMap="templateView">
+        <include refid="selectTemplates"/>
+        ORDER BY t.department_id, t.category, a.order_no
+    </select>
+
+    <select id="listByDepartment" resultMap="templateView">
+        <include refid="selectTemplates"/>
+        WHERE t.department_id = #{departmentId}
+        ORDER BY t.category, a.order_no
+    </select>
+
+    <select id="findById" resultMap="templateView">
+        <include refid="selectTemplates"/>
+        WHERE t.approval_template_id = #{approvalTemplateId}
+        ORDER BY a.order_no
+    </select>
+
+</mapper>
