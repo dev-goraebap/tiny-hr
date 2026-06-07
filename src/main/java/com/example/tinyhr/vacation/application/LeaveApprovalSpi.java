@@ -19,10 +19,10 @@ import org.springframework.stereotype.Component;
 /**
  * 휴가(LEAVE) 결재 확정 후속 처리 — approval 의 {@link ApprovalDecisionSpi} 구현.
  *
- * <p>{@code @Component} 라 스프링이 approval 의 {@code ApprovalDecisionSpiRegistry}(List 주입)에 자동
- * 등록한다. 소스 의존은 vacation → approval 단방향이며, 승인/반려/취소 시 제어 흐름만 approval →
- * vacation 으로 흐른다(의존성 역전). 승인 시 잔액을 차감하고, 승인 후 취소 시 환원하며, 모든 종료
- * 전이에서 알림을 보낸다.
+ * <p>{@code @Component} 라 스프링이 모든 SPI 구현을 {@code List} 로 모아 approval 의
+ * {@code ApprovalService} 에 주입한다(별도 레지스트리 없이 kind 로 색인). 소스 의존은 vacation →
+ * approval 단방향이며, 승인/반려/취소 시 제어 흐름만 approval → vacation 으로 흐른다(의존성 역전).
+ * 승인 시 잔액을 차감하고, 승인 후 취소 시 환원하며, 모든 종료 전이에서 알림을 보낸다.
  */
 @Component
 public class LeaveApprovalSpi implements ApprovalDecisionSpi {

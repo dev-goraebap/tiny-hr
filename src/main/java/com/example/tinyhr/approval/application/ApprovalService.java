@@ -2,9 +2,9 @@ package com.example.tinyhr.approval.application;
 
 import com.example.tinyhr.approval.application.spi.ApprovalDecisionContext;
 import com.example.tinyhr.approval.application.spi.ApprovalDecisionSpi;
-import com.example.tinyhr.approval.application.spi.ApprovalDecisionSpiRegistry;
 import com.example.tinyhr.approval.domain.ApprovalDecisionKind;
 import com.example.tinyhr.approval.domain.ApprovalErrorCode;
+import com.example.tinyhr.approval.domain.ApprovalRequestKind;
 import com.example.tinyhr.approval.domain.ApprovalRequestStatus;
 import com.example.tinyhr.approval.domain.request.ApprovalRequest;
 import com.example.tinyhr.approval.domain.request.ApprovalRequestRepository;
@@ -12,6 +12,9 @@ import com.example.tinyhr.shared.kernel.BusinessException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -23,6 +26,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>확정 후속(onApproved 등)은 같은 트랜잭션에서 실행된다(예외 시 롤백). 소비 BC 의 SPI 가 아직
  * 등록되지 않았으면 콜백 없이 상태 전이만 한다(MVP — vacation 이식 시 콜백이 붙는다).
  *
+ * <p>각 소비 BC 가 SPI 를 {@code @Component} 로 두면 스프링이 모든 구현을 {@code List} 로 주입한다.
+ * 별도 레지스트리 없이 여기서 kind 로 색인한다(같은 kind 중복 등록은 부팅 시 실패).
+ *
  * @actor 결재자, 신청자, 관리자
  */
 @Service
@@ -32,13 +38,22 @@ public class ApprovalService {
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final ApprovalRequestRepository approvalRequestRepository;
-    private final ApprovalDecisionSpiRegistry registry;
+    private final Map<ApprovalRequestKind, ApprovalDecisionSpi> spiByKind;
 
     public ApprovalService(
             ApprovalRequestRepository approvalRequestRepository,
-            ApprovalDecisionSpiRegistry registry) {
+            List<ApprovalDecisionSpi> spis) {
         this.approvalRequestRepository = approvalRequestRepository;
-        this.registry = registry;
+        Map<ApprovalRequestKind, ApprovalDecisionSpi> map =
+                new EnumMap<>(ApprovalRequestKind.class);
+        for (ApprovalDecisionSpi spi : spis) {
+            ApprovalDecisionSpi prev = map.putIfAbsent(spi.kind(), spi);
+            if (prev != null) {
+                throw new IllegalStateException(
+                        "ApprovalDecisionSpi 가 kind=" + spi.kind() + " 에 중복 등록되었습니다");
+            }
+        }
+        this.spiByKind = map;
     }
 
     /** 현재 차수 결재자가 승인 또는 반려한다. 최종 확정 시 SPI 후속 처리. */
@@ -96,7 +111,7 @@ public class ApprovalService {
     }
 
     private Optional<ApprovalDecisionSpi> spi(ApprovalRequest request) {
-        return registry.find(request.getKind());
+        return Optional.ofNullable(spiByKind.get(request.getKind()));
     }
 
     private static ApprovalDecisionContext toContext(ApprovalRequest request) {

@@ -8,7 +8,6 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 import com.example.tinyhr.approval.application.spi.ApprovalDecisionSpi;
-import com.example.tinyhr.approval.application.spi.ApprovalDecisionSpiRegistry;
 import com.example.tinyhr.approval.domain.ApprovalDecisionKind;
 import com.example.tinyhr.approval.domain.ApprovalErrorCode;
 import com.example.tinyhr.approval.domain.ApprovalRequestKind;
@@ -23,7 +22,6 @@ import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,10 +29,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ApprovalServiceTest {
 
     @Mock ApprovalRequestRepository approvalRequestRepository;
-    @Mock ApprovalDecisionSpiRegistry registry;
     @Mock ApprovalDecisionSpi spi;
 
-    @InjectMocks ApprovalService approvalService;
+    /** SPI 미등록(레지스트리 없이 빈 List 주입). */
+    private ApprovalService serviceWithoutSpi() {
+        return new ApprovalService(approvalRequestRepository, List.of());
+    }
+
+    /** LEAVE SPI 1개 등록. */
+    private ApprovalService serviceWithSpi() {
+        given(spi.kind()).willReturn(ApprovalRequestKind.LEAVE);
+        return new ApprovalService(approvalRequestRepository, List.of(spi));
+    }
 
     private static void assertBusiness(ThrowingCallable callable, ApprovalErrorCode expected) {
         assertThatThrownBy(callable)
@@ -52,9 +58,8 @@ class ApprovalServiceTest {
     @DisplayName("최종 승인 시 SPI onApproved 로 디스패치한다")
     void decide_dispatchesOnApproved() {
         given(approvalRequestRepository.findById("r")).willReturn(Optional.of(singleStep()));
-        given(registry.find(ApprovalRequestKind.LEAVE)).willReturn(Optional.of(spi));
 
-        approvalService.decide("r", "a", ApprovalDecisionKind.APPROVE, null, null);
+        serviceWithSpi().decide("r", "a", ApprovalDecisionKind.APPROVE, null, null);
 
         then(spi).should().onApproved(any());
         then(approvalRequestRepository).should().save(any(ApprovalRequest.class));
@@ -65,9 +70,8 @@ class ApprovalServiceTest {
     void decide_noSpi() {
         ApprovalRequest request = singleStep();
         given(approvalRequestRepository.findById("r")).willReturn(Optional.of(request));
-        given(registry.find(ApprovalRequestKind.LEAVE)).willReturn(Optional.empty());
 
-        approvalService.decide("r", "a", ApprovalDecisionKind.APPROVE, null, null);
+        serviceWithoutSpi().decide("r", "a", ApprovalDecisionKind.APPROVE, null, null);
 
         assertThat(request.getStatus()).isEqualTo(ApprovalRequestStatus.APPROVED);
     }
@@ -78,7 +82,7 @@ class ApprovalServiceTest {
         given(approvalRequestRepository.findById("none")).willReturn(Optional.empty());
 
         assertBusiness(
-                () -> approvalService.decide("none", "a", ApprovalDecisionKind.APPROVE, null, null),
+                () -> serviceWithoutSpi().decide("none", "a", ApprovalDecisionKind.APPROVE, null, null),
                 ApprovalErrorCode.APPROVAL_REQUEST_NOT_FOUND);
     }
 
@@ -87,9 +91,8 @@ class ApprovalServiceTest {
     void cancel() {
         ApprovalRequest request = singleStep();
         given(approvalRequestRepository.findById("r")).willReturn(Optional.of(request));
-        given(registry.find(ApprovalRequestKind.LEAVE)).willReturn(Optional.empty());
 
-        approvalService.cancel("r", "requester");
+        serviceWithoutSpi().cancel("r", "requester");
 
         assertThat(request.getStatus()).isEqualTo(ApprovalRequestStatus.CANCELLED);
     }
@@ -99,7 +102,7 @@ class ApprovalServiceTest {
     void cancel_forbidden() {
         given(approvalRequestRepository.findById("r")).willReturn(Optional.of(singleStep()));
 
-        assertBusiness(() -> approvalService.cancel("r", "other"),
+        assertBusiness(() -> serviceWithoutSpi().cancel("r", "other"),
                 ApprovalErrorCode.APPROVAL_REQUEST_FORBIDDEN);
         then(approvalRequestRepository).should(never()).save(any());
     }
@@ -109,9 +112,8 @@ class ApprovalServiceTest {
     void withdraw() {
         ApprovalRequest request = singleStep();
         given(approvalRequestRepository.findById("r")).willReturn(Optional.of(request));
-        given(registry.find(ApprovalRequestKind.LEAVE)).willReturn(Optional.empty());
 
-        approvalService.withdraw("r", "requester");
+        serviceWithoutSpi().withdraw("r", "requester");
 
         assertThat(request.getStatus()).isEqualTo(ApprovalRequestStatus.CANCELLED);
     }

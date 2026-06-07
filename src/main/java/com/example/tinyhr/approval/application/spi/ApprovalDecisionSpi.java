@@ -7,9 +7,9 @@ import java.time.LocalDate;
  * 결재 확정 후속 처리 포트(허브 → 도메인 역방향 협력).
  *
  * <p>approval(허브)이 <b>소유</b>하는 인터페이스다. 각 신청 도메인(vacation·overtime 등)이 자기
- * 모듈에서 이 인터페이스를 구현하고 {@link ApprovalDecisionSpiRegistry} 에 self-register 한다.
- * 소스 의존은 항상 <b>도메인 → approval</b> 단방향이며, 런타임 제어 흐름만 레지스트리를 통해
- * approval → 도메인으로 흐른다(의존성 역전).
+ * 모듈에서 이 인터페이스를 {@code @Component} 로 구현하면 스프링이 모든 구현을 {@code List} 로 모아
+ * {@code ApprovalService} 에 주입한다. 소스 의존은 항상 <b>도메인 → approval</b> 단방향이며, 런타임
+ * 제어 흐름만 approval → 도메인으로 흐른다(의존성 역전).
  */
 public interface ApprovalDecisionSpi {
 
